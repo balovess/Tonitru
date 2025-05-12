@@ -1,0 +1,4 @@
+cargo:rustc-link-search=native=D:\Code\Tonitru_go\target\debug\build\kyber-rust-e673f7cd67c18235\out
+cargo:warning=Copied DLL to: D:\Code\Tonitru_go\target\debug\build\kyber-rust-e673f7cd67c18235\out\kyber.dll
+cargo:rerun-if-changed=build.rs
+cargo:rerun-if-changed=kyber.dll

@@ -1,0 +1,12 @@
+[package]
+name = "tonitru-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI tool for Tonitru Network Native Data Format"
+license = "MIT" # Or other appropriate license
+repository = "https://github.com/your_username/tonitru-rust" # Replace with actual repo
+
+[dependencies]
+# Depend on the main tonitru library
+tonitru = { path = "../.." }
+# clap for command line argument parsing will be added later

@@ -1,0 +1,13 @@
+D:\Code\Tonitru_go\target\debug\deps\libtoml-735619f41f31ed8e.rmeta: C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\lib.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\map.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\value.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\datetime.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\ser.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\de.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\tokens.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\macros.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\spanned.rs
+
+D:\Code\Tonitru_go\target\debug\deps\toml-735619f41f31ed8e.d: C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\lib.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\map.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\value.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\datetime.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\ser.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\de.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\tokens.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\macros.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\spanned.rs
+
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\lib.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\map.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\value.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\datetime.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\ser.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\de.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\tokens.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\macros.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml-0.5.11\src\spanned.rs:

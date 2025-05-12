@@ -1,0 +1,38 @@
+[workspace]
+members = [
+    ".", # The root crate (tonitru library)
+    "tools/tonitru-cli",
+    "tools/tonitru-inspector",
+]
+
+[package]
+name = "tonitru"
+version = "0.1.0"
+edition = "2021"
+description = "Rust implementation of Tonitru Network Native Data Format"
+license = "MIT" # Or other appropriate license
+repository = "https://github.com/your_username/tonitru-rust" # Replace with actual repo
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+# Core dependencies based on the plan
+quinn = "0.10" # Or the latest compatible version
+blake3 = "1.3" # Or the latest compatible version
+zstd = "0.13"  # Or the latest compatible version
+# Removed lz4_flex = "0.10"
+brotli = "3.4" # Or the latest compatible version
+aes-gcm = "0.10" # Or the latest compatible version
+kyber-rust = "0.2.1" # Or the latest compatible version
+consistent_hash = "0.1.4" # Or the latest compatible version
+bloomfilter = "3.0.1" # Or the latest compatible version
+reed-solomon-erasure = "6.0.0" # Or the latest compatible version
+wasmtime = "17.0" # Or the latest compatible version
+clap = { version = "4.0", features = ["derive"] } # Or the latest compatible version
+libloading = "0.8" # Or the latest compatible version
+thiserror = "1.0" # Add thiserror crate
+bytes = "1.0" # Add bytes crate for zero-copy
+byteorder = "1.4" # Add byteorder crate
+
+# Other potential dependencies will be added as needed

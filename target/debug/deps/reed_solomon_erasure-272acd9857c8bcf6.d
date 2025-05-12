@@ -1,0 +1,14 @@
+D:\Code\Tonitru_go\target\debug\deps\libreed_solomon_erasure-272acd9857c8bcf6.rmeta: C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\lib.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\macros.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\core.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\errors.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\matrix.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\galois_16.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\galois_8.rs D:\Code\Tonitru_go\target\debug\build\reed-solomon-erasure-0ada756cc65ea5c2\out/table.rs
+
+D:\Code\Tonitru_go\target\debug\deps\reed_solomon_erasure-272acd9857c8bcf6.d: C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\lib.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\macros.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\core.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\errors.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\matrix.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\galois_16.rs C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\galois_8.rs D:\Code\Tonitru_go\target\debug\build\reed-solomon-erasure-0ada756cc65ea5c2\out/table.rs
+
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\lib.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\macros.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\core.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\errors.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\matrix.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\galois_16.rs:
+C:\Users\balov\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reed-solomon-erasure-6.0.0\src\galois_8.rs:
+D:\Code\Tonitru_go\target\debug\build\reed-solomon-erasure-0ada756cc65ea5c2\out/table.rs:
+
+# env-dep:OUT_DIR=D:\\Code\\Tonitru_go\\target\\debug\\build\\reed-solomon-erasure-0ada756cc65ea5c2\\out
