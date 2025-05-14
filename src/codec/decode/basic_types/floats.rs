@@ -41,9 +41,8 @@ pub fn decode_f64(length: u64, raw_value_slice: &[u8]) -> Result<HtlvValue> {
 impl BatchDecoder for f32 {
     type DecodedType = f32;
 
-    /// Decodes a batch of F32 values from bytes using zero-copy reinterpretation.
+    /// Decodes a batch of F32 values from bytes.
     /// Returns a slice of the decoded elements and the number of bytes read.
-    /// Requires the input data slice to be aligned for f32.
     fn decode_batch(data: &[u8]) -> Result<(&[Self::DecodedType], usize)> {
         let size = mem::size_of::<f32>();
         let align = mem::align_of::<f32>();
@@ -58,7 +57,7 @@ impl BatchDecoder for f32 {
 
         // Check alignment
         if data.as_ptr().align_offset(align) != 0 {
-             return Err(Error::CodecError(format!(
+            return Err(Error::CodecError(format!(
                 "Input data is not aligned for F32 batch decoding. Required alignment: {}",
                 align
             )));

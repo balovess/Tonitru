@@ -2,7 +2,7 @@
 
 use crate::internal::error::{Error, Result};
 use crate::codec::varint; // Import varint for decoding tag and length
-use crate::codec::types::{HtlvItem, HtlvValueType, HtlvValue};
+use crate::codec::types::{HtlvItem, HtlvValueType};
 use bytes::BytesMut;
 // Removed unused import: use bytes::Bytes; // Import Bytes for batch decoding alignment
 use crate::codec::decode::basic_value_decoder; // Import the new basic value decoder module
@@ -212,11 +212,13 @@ impl DecodeContext {
                 HtlvValueType::I16 | HtlvValueType::I32 | HtlvValueType::I64 |
                 HtlvValueType::F32 | HtlvValueType::F64 => {
                     // It's a batch decodable basic type
+                    // self.current_offset = value_end; // Removed incorrect offset advance
                     self.state = DecodeState::DecodeBatchValue; // Transition to decode batch value
                     // println!("decode_item state transition: PrepareValue -> DecodeBatchValue (Batch)"); // Debug print
                 }
                 _ => {
                     // It's a single basic type
+                    // self.current_offset = value_end; // Removed incorrect offset advance
                     self.state = DecodeState::DecodeValue; // Transition to decode the single value
                     // println!("decode_item state transition: PrepareValue -> DecodeValue (Single Basic)"); // Debug print
                 }
@@ -231,10 +233,10 @@ impl DecodeContext {
         let tag = self.current_item_tag;
         let value_type = self.current_item_type.unwrap();
         let length = self.current_item_length;
-        let value_start = self.current_offset;
+        let value_start = self.current_offset; // Corrected value_start calculation
         let value_end = value_start + length as usize;
         let raw_value_slice = &self.data[value_start..value_end];
-        
+
         // Use the new basic_value_decoder function
         let decoded_value = basic_value_decoder::decode_basic_value(value_type, length, raw_value_slice)?;
 
@@ -262,13 +264,14 @@ impl DecodeContext {
         let tag = self.current_item_tag;
         let value_type = self.current_item_type.unwrap(); // This is the element type (e.g., U32)
         let length = self.current_item_length; // This is the total length of the batch value
-        let value_start = self.current_offset;
-        let raw_value_slice = &self.data[value_start..value_start + length as usize]; // Slice for the entire batch value
+        let value_start = self.current_offset; // Corrected value_start calculation
+        let value_end = value_start + length as usize;
+        let raw_value_slice = &self.data[value_start..value_end]; // Slice for the entire batch value
 
         // Use the new batch_value_decoder function
         let decoded_value = batch_value_decoder::decode_batch_value(value_type, length, raw_value_slice)?;
 
-        self.current_offset = value_start + length as usize; // Advance offset past the batch value
+        self.current_offset = value_end; // Advance offset past the batch value
 
         if self.complex_stack.is_empty() {
             // This is the root item and it's a batch

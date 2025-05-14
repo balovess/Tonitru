@@ -17,16 +17,13 @@ pub mod large_field_handler;
 
 
 use crate::internal::error::{Error, Result};
-use crate::codec::varint;
-use crate::codec::types::{HtlvItem, HtlvValueType, HtlvValue};
-use bytes::BytesMut; // Use BytesMut for efficient buffer appending
-use bytes::Bytes; // Import Bytes for test data
-use decoder_state_machine::{DecodeContext, DecodeState, ComplexDecodeContext, MAX_NESTING_DEPTH}; // Import from the new state machine module
-use batch::BatchDecoder; // Import BatchDecoder trait
-use std::mem; // Import std::mem
+use crate::codec::types::HtlvItem;
+use decoder_state_machine::{DecodeContext, DecodeState}; // Import from the new state machine module
 
 
 // Fixed length for the total length encoded in the large field header item value (size of u64)
+// This constant is currently unused but kept for future reference
+#[allow(dead_code)]
 const TOTAL_LENGTH_HEADER_LEN: u64 = 8;
 
 
@@ -62,10 +59,11 @@ pub fn decode_item(data: &[u8]) -> Result<(HtlvItem, usize)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bytes::Bytes;
     use crate::codec::varint; // Import varint for tests
     use crate::codec::encode::encode_item; // Import encode_item for tests
     use decoder_state_machine::MAX_NESTING_DEPTH; // Import MAX_NESTING_DEPTH for tests
+    use bytes::BytesMut;
+    use crate::codec::types::{HtlvValue, HtlvValueType};
 
     #[test]
     fn test_decode_nested_depth_limit() {
@@ -88,7 +86,7 @@ mod tests {
         // Each header is Tag (varint, min 1 byte) + Type (1 byte) + Length (varint, min 1 byte).
         // For this test, we use tag 1 (1 byte) and a placeholder length 0 (1 byte).
         // So each header is 1 + 1 + 1 = 3 bytes.
-        let item_header_size = varint::encode_varint(tag).len() + 1 + varint::encode_varint(0).len();
+        let _item_header_size = varint::encode_varint(tag).len() + 1 + varint::encode_varint(0).len(); // Unused but kept for clarity
 
         // Now, go back and update the Length fields.
         let mut current_offset = 0;

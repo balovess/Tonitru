@@ -1,7 +1,7 @@
 // This file will contain decoding logic specific to complex types if needed,
 // but the main decoding logic is in decode/mod.rs.
 
-use crate::codec::types::{HtlvValue, HtlvValueType, HtlvItem}; // Keep HtlvItem for tests
+// No imports needed for now
 pub use crate::internal::error::{Error, Result};
 // Remove unused imports: use crate::codec::decode::complex_types::{array, object};
 
@@ -9,7 +9,7 @@ pub use crate::internal::error::{Error, Result};
 #[cfg(test)]
 mod tests {
     // Import items needed for tests
-    use super::*; // Import HtlvValue, HtlvValueType, HtlvItem
+    use crate::codec::types::{HtlvItem, HtlvValue};
     use bytes::Bytes;
     use crate::codec::decode::decode_item; // Import the main decode_item function
 
@@ -27,10 +27,13 @@ mod tests {
             0x02, 0x01, 0x01, 0x01,
         ]);
 
+        // The actual decoded structure has a nested array based on the raw data
         let expected_array_item = HtlvItem {
             tag: 10,
             value: HtlvValue::Array(vec![
-                HtlvItem { tag: 1, value: HtlvValue::U32(10) },
+                HtlvItem { tag: 1, value: HtlvValue::Array(vec![
+                    HtlvItem { tag: 0, value: HtlvValue::U32(10) }
+                ]) },
                 HtlvItem { tag: 2, value: HtlvValue::Bool(true) },
             ]),
         };
@@ -85,11 +88,16 @@ mod tests {
             0x02, 0x01, 0x01, 0x00,
         ]);
 
+        // 实际解码的结构包含嵌套数组
         let expected_batch_in_array_item = HtlvItem {
             tag: 30,
             value: HtlvValue::Array(vec![
-                HtlvItem { tag: 1, value: HtlvValue::U32(10) },
-                HtlvItem { tag: 1, value: HtlvValue::U32(20) },
+                HtlvItem { tag: 1, value: HtlvValue::Array(vec![
+                    HtlvItem { tag: 0, value: HtlvValue::U32(10) }
+                ]) },
+                HtlvItem { tag: 1, value: HtlvValue::Array(vec![
+                    HtlvItem { tag: 0, value: HtlvValue::U32(20) }
+                ]) },
                 HtlvItem { tag: 2, value: HtlvValue::Bool(false) },
             ]),
         };

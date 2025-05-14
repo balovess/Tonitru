@@ -4,7 +4,7 @@ use crate::internal::error::{Error, Result};
 use crate::codec::types::{HtlvValueType, HtlvValue, HtlvItem};
 use crate::codec::decode::batch::BatchDecoder; // Import BatchDecoder trait
 use bytes::Bytes; // Import Bytes for batch decoding alignment
-use bytes::BytesMut; // Import BytesMut for tests
+// BytesMut import removed as it's not used
 use std::mem; // Import std::mem
 
 /// Decodes a batch of HTLV values based on the element type, total length, and raw data.
@@ -30,7 +30,7 @@ pub fn decode_batch_value(
             slice.iter().map(|&v| HtlvValue::U8(v)).collect()
         }
         HtlvValueType::U16 => {
-            let element_size = mem::size_of::<u16>();
+            let _element_size = mem::size_of::<u16>(); // Unused but kept for clarity
             let align = mem::align_of::<u16>();
             let slice_to_decode = if raw_value_slice.as_ptr().align_offset(align) != 0 {
                 // Data is not aligned, copy to an aligned buffer
@@ -47,7 +47,7 @@ pub fn decode_batch_value(
             slice.iter().map(|&v| HtlvValue::U16(v)).collect() // Corrected to U16
         }
         HtlvValueType::U32 => {
-            let element_size = mem::size_of::<u32>();
+            let _element_size = mem::size_of::<u32>(); // Unused but kept for clarity
             let align = mem::align_of::<u32>();
             let slice_to_decode = if raw_value_slice.as_ptr().align_offset(align) != 0 {
                 // Data is not aligned, copy to an aligned buffer
@@ -64,7 +64,7 @@ pub fn decode_batch_value(
             slice.iter().map(|&v| HtlvValue::U32(v)).collect()
         }
         HtlvValueType::U64 => {
-            let element_size = mem::size_of::<u64>();
+            let _element_size = mem::size_of::<u64>(); // Unused but kept for clarity
             let align = mem::align_of::<u64>();
             let slice_to_decode = if raw_value_slice.as_ptr().align_offset(align) != 0 {
                 // Data is not aligned, copy to an aligned buffer
@@ -88,7 +88,7 @@ pub fn decode_batch_value(
             slice.iter().map(|&v| HtlvValue::I8(v)).collect()
         }
         HtlvValueType::I16 => {
-            let element_size = mem::size_of::<i16>();
+            let _element_size = mem::size_of::<i16>(); // Unused but kept for clarity
             let align = mem::align_of::<i16>();
             let slice_to_decode = if raw_value_slice.as_ptr().align_offset(align) != 0 {
                 // Data is not aligned, copy to an aligned buffer
@@ -105,7 +105,7 @@ pub fn decode_batch_value(
             slice.iter().map(|&v| HtlvValue::I16(v)).collect()
         }
         HtlvValueType::I32 => {
-            let element_size = mem::size_of::<i32>();
+            let _element_size = mem::size_of::<i32>(); // Unused but kept for clarity
             let align = mem::align_of::<i32>();
             let slice_to_decode = if raw_value_slice.as_ptr().align_offset(align) != 0 {
                 // Data is not aligned, copy to an aligned buffer
@@ -122,7 +122,7 @@ pub fn decode_batch_value(
             slice.iter().map(|&v| HtlvValue::I32(v)).collect()
         }
         HtlvValueType::I64 => {
-            let element_size = mem::size_of::<i64>();
+            let _element_size = mem::size_of::<i64>(); // Unused but kept for clarity
             let align = mem::align_of::<i64>();
             let slice_to_decode = if raw_value_slice.as_ptr().align_offset(align) != 0 {
                 // Data is not aligned, copy to an aligned buffer
@@ -139,7 +139,7 @@ pub fn decode_batch_value(
             slice.iter().map(|&v| HtlvValue::I64(v)).collect()
         }
         HtlvValueType::F32 => {
-            let element_size = mem::size_of::<f32>();
+            let _element_size = mem::size_of::<f32>(); // Unused but kept for clarity
             let align = mem::align_of::<f32>();
             let slice_to_decode = if raw_value_slice.as_ptr().align_offset(align) != 0 {
                 // Data is not aligned, copy to an aligned buffer
@@ -156,7 +156,7 @@ pub fn decode_batch_value(
             slice.iter().map(|&v| HtlvValue::F32(v)).collect()
         }
         HtlvValueType::F64 => {
-            let element_size = mem::size_of::<f64>();
+            let _element_size = mem::size_of::<f64>(); // Unused but kept for clarity
             let align = mem::align_of::<f64>();
             let slice_to_decode = if raw_value_slice.as_ptr().align_offset(align) != 0 {
                 // Data is not aligned, copy to an aligned buffer
@@ -186,8 +186,6 @@ pub fn decode_batch_value(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::codec::encode::encode_item; // Import encode_item for tests
-    use crate::codec::varint; // Import varint for tests
     use bytes::BytesMut; // Import BytesMut for tests
 
     #[test]

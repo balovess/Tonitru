@@ -1,6 +1,6 @@
 use crate::codec::types::HtlvValue;
 use crate::internal::error::{Error, Result};
-use std::mem;
+// std::mem import removed as it's not used
 use crate::codec::decode::batch::BatchDecoder; // Import BatchDecoder trait
 
 /// Decodes a U8 HtlvValue from bytes.

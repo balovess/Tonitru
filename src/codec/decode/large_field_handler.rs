@@ -4,7 +4,7 @@ use crate::internal::error::{Error, Result};
 use crate::codec::types::{HtlvItem, HtlvValueType, HtlvValue};
 use crate::codec::decode::decoder_state_machine::ComplexDecodeContext; // Keep ComplexDecodeContext for nested large fields
 use bytes::BytesMut;
-use bytes::Bytes; // Import Bytes for freezing buffer
+// Bytes import removed as it's not used
 use std::mem; // Import std::mem for tests
 
 /// Represents the result of processing a large field shard.
@@ -70,11 +70,9 @@ impl LargeFieldHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::codec::decode::decoder_state_machine::{DecodeContext, DecodeState, ComplexDecodeContext, MAX_NESTING_DEPTH};
-    use crate::codec::types::{HtlvValueType, HtlvValue, HtlvItem};
+    use crate::codec::decode::decoder_state_machine::{ComplexDecodeContext};
+    use crate::codec::types::{HtlvValueType, HtlvValue};
     use bytes::BytesMut;
-    use bytes::Bytes;
-    use std::mem;
 
     #[test]
     fn test_process_shard_complete_root() {

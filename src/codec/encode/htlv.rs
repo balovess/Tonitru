@@ -1,5 +1,5 @@
 use bytes::{BytesMut, BufMut};
-use byteorder::{BigEndian, WriteBytesExt};
+// byteorder imports removed as they're not used
 
 use crate::codec::{types::HTLVBlock, Encode, varint::encode_varint};
 use crate::internal::error::Result;

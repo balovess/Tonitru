@@ -1,15 +1,10 @@
 use crate::codec::types::HtlvValue;
 use crate::internal::error::{Error, Result};
 use std::mem;
+use std::slice;
 use crate::codec::decode::batch::BatchDecoder; // Import BatchDecoder trait
-use std::slice; // Import slice for unsafe reinterpretation
 
-// Enable necessary features for SIMD intrinsics (requires Rust nightly or specific configuration)
-#[cfg(target_arch = "x86_64")]
-// Import specific SIMD intrinsics based on target features
-#[cfg(target_arch = "x86_64")]
-#[cfg(target_feature = "sse4.1")]
-use std::arch::x86_64::{_mm_loadu_si128, _mm_extract_epi32};
+// SIMD intrinsics are now handled in the simd_optimizations module
 
 
 /// Decodes a U32 HtlvValue from bytes.
@@ -63,7 +58,7 @@ pub fn decode_u32(length: u64, raw_value_slice: &[u8]) -> Result<HtlvValue> {
 impl BatchDecoder for u32 {
     type DecodedType = u32;
 
-    /// Decodes a batch of U32 values from bytes using zero-copy reinterpretation.
+    /// Decodes a batch of U32 values from bytes.
     /// Returns a slice of the decoded elements and the number of bytes read.
     fn decode_batch(data: &[u8]) -> Result<(&[Self::DecodedType], usize)> {
         let size = mem::size_of::<u32>();

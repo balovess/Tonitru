@@ -1,4 +1,4 @@
-use bytes::Buf;
+// bytes::Buf import removed as it's not used
 use byteorder::{BigEndian, ReadBytesExt};
 
 use crate::codec::{types::{HTLVBlock, HTLVFlag}, Decode, varint::decode_varint};

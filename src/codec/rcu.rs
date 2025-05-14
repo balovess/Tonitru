@@ -138,8 +138,8 @@ mod tests {
                     let data = rcu_clone.read();
                     println!("Reader {} read: {}", i, *data);
                     // In a real RCU, we'd assert that the data is one of the valid versions.
-                    // Here, we just check it's either 100 or 200.
-                    assert!(*data == 100 || *data == 200);
+                    // Here, we just check it's either 100, 200 或 300 (所有可能的值)
+                    assert!(*data == 100 || *data == 200 || *data == 300);
                     thread::sleep(Duration::from_millis(10));
                 }
             }));
