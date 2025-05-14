@@ -14,6 +14,8 @@ pub mod basic_value_decoder;
 pub mod batch_value_decoder;
 pub mod complex_value_handler;
 pub mod large_field_handler;
+pub mod simd_optimizations;
+pub mod pipeline_processor;
 
 
 use crate::internal::error::{Error, Result};

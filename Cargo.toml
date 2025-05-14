@@ -35,5 +35,10 @@ thiserror = "1.0" # Add thiserror crate
 bytes = "1.0" # Add bytes crate for zero-copy
 byteorder = "1.4" # Add byteorder crate
 bitflags = "2.0" # Add bitflags crate
+bytemuck = { version = "1.13", features = ["derive"] } # Add bytemuck for safe type casting
+
+[features]
+default = []
+simd = [] # Feature flag for SIMD optimizations
 
 # Other potential dependencies will be added as needed

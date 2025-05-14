@@ -1,10 +1,12 @@
 use crate::internal::error::Result;
-use crate::internal::error::Error; // Import Error for the default case
 use std::fmt::Debug; // Import Debug trait
 
 pub mod zstd;
 // Removed lz4 module: pub mod lz4;
 pub mod brotli;
+pub mod no_compression;
+pub mod sharded;
+pub mod incremental;
 
 /// Trait for compression algorithms.
 pub trait Compressor: Debug { // Added Debug bound
@@ -29,7 +31,7 @@ pub enum CompressionStrategy {
 /// Returns a Compressor implementation based on the given strategy.
 pub fn get_compressor(strategy: CompressionStrategy) -> Result<Box<dyn Compressor>> {
     match strategy {
-        CompressionStrategy::NoCompression => Err(Error::CompressionError("No compression strategy selected".to_string())), // Or return a NoOpCompressor
+        CompressionStrategy::NoCompression => Ok(Box::new(no_compression::NoCompressionCompressor)),
         CompressionStrategy::Zstd => Ok(Box::new(zstd::ZstdCompressor)),
         // Removed Lz4 match arm: CompressionStrategy::Lz4 => Ok(Box::new(lz4::Lz4Compressor)),
         CompressionStrategy::Brotli => Ok(Box::new(brotli::BrotliCompressor)),
@@ -37,9 +39,17 @@ pub fn get_compressor(strategy: CompressionStrategy) -> Result<Box<dyn Compresso
 }
 
 
-// TODO: Implement dynamic compression strategy logic (partially done with get_compressor)
-// TODO: Implement sharded compression logic
-// TODO: Implement incremental compression logic
+// NOTE: Dynamic compression strategy selector has been permanently shelved.
+// Zstd is now used as the default compression method.
+//
+// The compression module is designed to be easily extensible:
+// 1. To add a new compression algorithm, create a new module (e.g., `new_algo.rs`)
+// 2. Implement the `Compressor` trait for your algorithm
+// 3. Add a new variant to the `CompressionStrategy` enum
+// 4. Update the `get_compressor` function to return your compressor for the new strategy
+//
+// The core architecture allows for easy replacement of compression protocols
+// without affecting other parts of the system.
 
 #[cfg(test)]
 mod tests {
@@ -73,8 +83,12 @@ mod tests {
 
     #[test]
     fn test_get_compressor_no_compression() {
-        let result = get_compressor(CompressionStrategy::NoCompression);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string(), "Compression Error: No compression strategy selected"); // Corrected expected error string
+        let compressor = get_compressor(CompressionStrategy::NoCompression).unwrap();
+        assert!(compressor.compress(b"test").is_ok()); // Basic check that the compressor is functional
+
+        // Test that NoCompressionCompressor doesn't actually compress data
+        let test_data = b"test data for no compression";
+        let compressed = compressor.compress(test_data).unwrap();
+        assert_eq!(compressed, test_data.to_vec()); // Data should be unchanged
     }
 }
