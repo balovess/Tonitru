@@ -8,21 +8,22 @@
 
 use crate::internal::error::{Error, Result};
 use crate::codec::types::HtlvValue;
-use bytes::Bytes;
 
 // Sub-modules
+pub mod prefetch;
 pub mod integer_processors;
 pub mod signed_integer_processors;
 pub mod float_processors;
 pub mod batch_processor;
 
-// Re-export the main function
+// Re-export key types and functions
 pub use batch_processor::process_batch_value;
+pub use prefetch::{AlignedBatch, prepare_aligned_batch, FromLeBytes, Pod};
 
 /// Trait for types that can be processed through the four-stage pipeline
 pub trait PipelineProcessor: Sized {
     /// The type of the decoded elements
-    type DecodedType;
+    type DecodedType: Pod + FromLeBytes;
 
     /// Stage 1: Prefetch data for efficient processing
     ///
@@ -31,20 +32,22 @@ pub trait PipelineProcessor: Sized {
     /// - Prefetching data into CPU cache
     /// - Preparing data structures for batch processing
     ///
-    /// Returns a tuple of:
-    /// - The prepared data
-    /// - Metadata needed for subsequent stages
-    fn prefetch(data: &[u8]) -> Result<(Bytes, usize)>;
+    /// Returns an AlignedBatch containing the prepared data and the number of bytes consumed.
+    /// The AlignedBatch provides a clear indication of whether the data is aligned or has been copied.
+    fn prefetch(data: &[u8]) -> Result<(AlignedBatch<Self::DecodedType>, usize)> {
+        // Default implementation uses the unified prepare_aligned_batch function
+        prepare_aligned_batch::<Self::DecodedType>(data)
+    }
 
     /// Stage 2: Decode raw bytes to typed values
     ///
     /// This stage converts raw bytes to typed values, using:
-    /// - SIMD instructions when available
+    /// - SIMD instructions when available and data is aligned
     /// - Zero-copy techniques when possible
     /// - Fallback to scalar processing when necessary
     ///
     /// Returns a vector of decoded values and the number of bytes consumed
-    fn decode(prepared_data: &Bytes) -> Result<(Vec<Self::DecodedType>, usize)>;
+    fn decode(aligned_batch: AlignedBatch<Self::DecodedType>) -> Result<(Vec<Self::DecodedType>, usize)>;
 
     /// Stage 3: Dispatch decoded values
     ///
@@ -67,10 +70,10 @@ pub trait PipelineProcessor: Sized {
     /// Process data through the complete pipeline
     fn process_pipeline(data: &[u8]) -> Result<(Vec<HtlvValue>, usize)> {
         // Stage 1: Prefetch
-        let (prepared_data, _expected_size) = Self::prefetch(data)?;
+        let (aligned_batch, bytes_consumed) = Self::prefetch(data)?;
 
         // Stage 2: Decode
-        let (decoded_values, bytes_consumed) = Self::decode(&prepared_data)?;
+        let (decoded_values, _) = Self::decode(aligned_batch)?;
 
         // Stage 3: Dispatch
         let htlv_values = Self::dispatch(&decoded_values);

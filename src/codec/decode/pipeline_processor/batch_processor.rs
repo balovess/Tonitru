@@ -3,15 +3,40 @@
 use crate::internal::error::{Error, Result};
 use crate::codec::types::{HtlvValueType, HtlvValue, HtlvItem};
 
-// Import PipelineProcessor trait
-use super::PipelineProcessor;
+// Import PipelineProcessor trait and related types
+use super::{PipelineProcessor, prepare_aligned_batch};
+
+/// Generic batch processing function for any type that implements PipelineProcessor
+///
+/// This function provides a unified approach to batch processing using the new AlignedBatch type.
+/// It handles the prefetch and decode stages, ensuring proper alignment and efficient processing.
+pub fn process_batch_generic<T: PipelineProcessor>(raw_data: &[u8]) -> Result<(Vec<HtlvValue>, usize)> {
+    // Stage 1: Prefetch - Prepare aligned data
+    let (aligned_batch, bytes_consumed) = prepare_aligned_batch::<T::DecodedType>(raw_data)?;
+
+    // Stage 2: Decode - Convert to typed values
+    let (decoded_values, _) = T::decode(aligned_batch)?;
+
+    // Stage 3: Dispatch - Convert to HtlvValues
+    let htlv_values = T::dispatch(&decoded_values);
+
+    // Stage 4: Verify - Validate decoded data
+    if !T::verify(&decoded_values, raw_data, bytes_consumed) {
+        return Err(Error::CodecError(format!(
+            "Verification failed for {} batch decoding",
+            std::any::type_name::<T>()
+        )));
+    }
+
+    Ok((htlv_values, bytes_consumed))
+}
 
 /// Process batch values using the pipeline processor
 ///
 /// This function selects the appropriate pipeline processor based on the element type
 /// and processes the raw data through the four-stage pipeline:
-/// 1. Prefetch: Prepare data for efficient processing
-/// 2. Decode: Convert raw bytes to typed values
+/// 1. Prefetch: Prepare data for efficient processing by ensuring proper alignment
+/// 2. Decode: Convert raw bytes to typed values using the aligned data
 /// 3. Dispatch: Process decoded values
 /// 4. Verify: Validate decoded data
 ///
@@ -22,16 +47,16 @@ pub fn process_batch_value(
     raw_value_slice: &[u8],
 ) -> Result<HtlvValue> {
     let (htlv_values, _) = match element_type {
-        HtlvValueType::U8 => u8::process_pipeline(raw_value_slice)?,
-        HtlvValueType::U16 => u16::process_pipeline(raw_value_slice)?,
-        HtlvValueType::U32 => u32::process_pipeline(raw_value_slice)?,
-        HtlvValueType::U64 => u64::process_pipeline(raw_value_slice)?,
-        HtlvValueType::I8 => i8::process_pipeline(raw_value_slice)?,
-        HtlvValueType::I16 => i16::process_pipeline(raw_value_slice)?,
-        HtlvValueType::I32 => i32::process_pipeline(raw_value_slice)?,
-        HtlvValueType::I64 => i64::process_pipeline(raw_value_slice)?,
-        HtlvValueType::F32 => f32::process_pipeline(raw_value_slice)?,
-        HtlvValueType::F64 => f64::process_pipeline(raw_value_slice)?,
+        HtlvValueType::U8 => process_batch_generic::<u8>(raw_value_slice)?,
+        HtlvValueType::U16 => process_batch_generic::<u16>(raw_value_slice)?,
+        HtlvValueType::U32 => process_batch_generic::<u32>(raw_value_slice)?,
+        HtlvValueType::U64 => process_batch_generic::<u64>(raw_value_slice)?,
+        HtlvValueType::I8 => process_batch_generic::<i8>(raw_value_slice)?,
+        HtlvValueType::I16 => process_batch_generic::<i16>(raw_value_slice)?,
+        HtlvValueType::I32 => process_batch_generic::<i32>(raw_value_slice)?,
+        HtlvValueType::I64 => process_batch_generic::<i64>(raw_value_slice)?,
+        HtlvValueType::F32 => process_batch_generic::<f32>(raw_value_slice)?,
+        HtlvValueType::F64 => process_batch_generic::<f64>(raw_value_slice)?,
         _ => return Err(Error::CodecError(format!("Unsupported type for batch processing: {:?}", element_type))),
     };
 

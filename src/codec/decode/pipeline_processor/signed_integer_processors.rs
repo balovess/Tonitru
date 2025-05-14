@@ -1,66 +1,24 @@
 // Signed integer type pipeline processors
 
-use crate::internal::error::{Error, Result};
+use crate::internal::error::Result;
 use crate::codec::types::HtlvValue;
-use bytes::{Bytes, BytesMut};
 use std::mem;
-use bytemuck;
 
-use super::PipelineProcessor;
+use super::{PipelineProcessor, AlignedBatch};
 
 /// Implementation of PipelineProcessor for i16
 impl PipelineProcessor for i16 {
     type DecodedType = i16;
 
-    fn prefetch(data: &[u8]) -> Result<(Bytes, usize)> {
-        let size = mem::size_of::<i16>();
-        if data.len() % size != 0 {
-            return Err(Error::CodecError(format!(
-                "Invalid data length for I16 batch decoding. Length ({}) must be a multiple of {}",
-                data.len(),
-                size
-            )));
-        }
+    // Use default prefetch implementation from trait
 
-        let align = mem::align_of::<i16>();
-        let prepared_data = if data.as_ptr().align_offset(align) != 0 {
-            // Data is not aligned, copy to an aligned buffer
-            let mut buffer = BytesMut::with_capacity(data.len());
-            buffer.extend_from_slice(data);
-            buffer.freeze()
-        } else {
-            // Data is already aligned
-            Bytes::copy_from_slice(data)
-        };
+    fn decode(aligned_batch: AlignedBatch<Self::DecodedType>) -> Result<(Vec<Self::DecodedType>, usize)> {
+        // The aligned_batch already contains properly aligned data
+        // We can simply convert it to a vector
+        let slice = aligned_batch.as_slice();
+        let bytes_consumed = slice.len() * mem::size_of::<i16>();
 
-        Ok((prepared_data, data.len()))
-    }
-
-    fn decode(prepared_data: &Bytes) -> Result<(Vec<Self::DecodedType>, usize)> {
-        let data = prepared_data.as_ref();
-
-        // Use bytemuck for safe casting if data is properly aligned
-        if (data.as_ptr() as usize) % mem::align_of::<i16>() == 0 {
-            let decoded_slice = bytemuck::cast_slice(data);
-            return Ok((decoded_slice.to_vec(), data.len()));
-        }
-
-        // Fallback to scalar processing
-        let count = data.len() / mem::size_of::<i16>();
-        if count == 0 {
-            return Ok((Vec::new(), 0));
-        }
-
-        // For unaligned data, we need to copy it to a new buffer
-        // This is inefficient but safe
-        let mut values = Vec::with_capacity(count);
-        for i in 0..count {
-            let offset = i * mem::size_of::<i16>();
-            let value = i16::from_le_bytes([data[offset], data[offset + 1]]);
-            values.push(value);
-        }
-
-        Ok((values, data.len()))
+        Ok((slice.to_vec(), bytes_consumed))
     }
 
     fn dispatch(decoded_values: &[Self::DecodedType]) -> Vec<HtlvValue> {
@@ -78,60 +36,15 @@ impl PipelineProcessor for i16 {
 impl PipelineProcessor for i32 {
     type DecodedType = i32;
 
-    fn prefetch(data: &[u8]) -> Result<(Bytes, usize)> {
-        let size = mem::size_of::<i32>();
-        if data.len() % size != 0 {
-            return Err(Error::CodecError(format!(
-                "Invalid data length for I32 batch decoding. Length ({}) must be a multiple of {}",
-                data.len(),
-                size
-            )));
-        }
+    // Use default prefetch implementation from trait
 
-        let align = mem::align_of::<i32>();
-        let prepared_data = if data.as_ptr().align_offset(align) != 0 {
-            // Data is not aligned, copy to an aligned buffer
-            let mut buffer = BytesMut::with_capacity(data.len());
-            buffer.extend_from_slice(data);
-            buffer.freeze()
-        } else {
-            // Data is already aligned
-            Bytes::copy_from_slice(data)
-        };
+    fn decode(aligned_batch: AlignedBatch<Self::DecodedType>) -> Result<(Vec<Self::DecodedType>, usize)> {
+        // The aligned_batch already contains properly aligned data
+        // We can simply convert it to a vector
+        let slice = aligned_batch.as_slice();
+        let bytes_consumed = slice.len() * mem::size_of::<i32>();
 
-        Ok((prepared_data, data.len()))
-    }
-
-    fn decode(prepared_data: &Bytes) -> Result<(Vec<Self::DecodedType>, usize)> {
-        let data = prepared_data.as_ref();
-
-        // Use bytemuck for safe casting if data is properly aligned
-        if (data.as_ptr() as usize) % mem::align_of::<i32>() == 0 {
-            let decoded_slice = bytemuck::cast_slice(data);
-            return Ok((decoded_slice.to_vec(), data.len()));
-        }
-
-        // Fallback to scalar processing
-        let count = data.len() / mem::size_of::<i32>();
-        if count == 0 {
-            return Ok((Vec::new(), 0));
-        }
-
-        // For unaligned data, we need to copy it to a new buffer
-        // This is inefficient but safe
-        let mut values = Vec::with_capacity(count);
-        for i in 0..count {
-            let offset = i * mem::size_of::<i32>();
-            let value = i32::from_le_bytes([
-                data[offset],
-                data[offset + 1],
-                data[offset + 2],
-                data[offset + 3]
-            ]);
-            values.push(value);
-        }
-
-        Ok((values, data.len()))
+        Ok((slice.to_vec(), bytes_consumed))
     }
 
     fn dispatch(decoded_values: &[Self::DecodedType]) -> Vec<HtlvValue> {
@@ -149,64 +62,15 @@ impl PipelineProcessor for i32 {
 impl PipelineProcessor for i64 {
     type DecodedType = i64;
 
-    fn prefetch(data: &[u8]) -> Result<(Bytes, usize)> {
-        let size = mem::size_of::<i64>();
-        if data.len() % size != 0 {
-            return Err(Error::CodecError(format!(
-                "Invalid data length for I64 batch decoding. Length ({}) must be a multiple of {}",
-                data.len(),
-                size
-            )));
-        }
+    // Use default prefetch implementation from trait
 
-        let align = mem::align_of::<i64>();
-        let prepared_data = if data.as_ptr().align_offset(align) != 0 {
-            // Data is not aligned, copy to an aligned buffer
-            let mut buffer = BytesMut::with_capacity(data.len());
-            buffer.extend_from_slice(data);
-            buffer.freeze()
-        } else {
-            // Data is already aligned
-            Bytes::copy_from_slice(data)
-        };
+    fn decode(aligned_batch: AlignedBatch<Self::DecodedType>) -> Result<(Vec<Self::DecodedType>, usize)> {
+        // The aligned_batch already contains properly aligned data
+        // We can simply convert it to a vector
+        let slice = aligned_batch.as_slice();
+        let bytes_consumed = slice.len() * mem::size_of::<i64>();
 
-        Ok((prepared_data, data.len()))
-    }
-
-    fn decode(prepared_data: &Bytes) -> Result<(Vec<Self::DecodedType>, usize)> {
-        let data = prepared_data.as_ref();
-
-        // Use bytemuck for safe casting if data is properly aligned
-        if (data.as_ptr() as usize) % mem::align_of::<i64>() == 0 {
-            let decoded_slice = bytemuck::cast_slice(data);
-            return Ok((decoded_slice.to_vec(), data.len()));
-        }
-
-        // Fallback to scalar processing
-        let count = data.len() / mem::size_of::<i64>();
-        if count == 0 {
-            return Ok((Vec::new(), 0));
-        }
-
-        // For unaligned data, we need to copy it to a new buffer
-        // This is inefficient but safe
-        let mut values = Vec::with_capacity(count);
-        for i in 0..count {
-            let offset = i * mem::size_of::<i64>();
-            let value = i64::from_le_bytes([
-                data[offset],
-                data[offset + 1],
-                data[offset + 2],
-                data[offset + 3],
-                data[offset + 4],
-                data[offset + 5],
-                data[offset + 6],
-                data[offset + 7]
-            ]);
-            values.push(value);
-        }
-
-        Ok((values, data.len()))
+        Ok((slice.to_vec(), bytes_consumed))
     }
 
     fn dispatch(decoded_values: &[Self::DecodedType]) -> Vec<HtlvValue> {
