@@ -21,10 +21,10 @@ Tonitru is ideal for anyone building:
 Clone the repository and explore the documentation in the `docs/` directory to get up and running quickly.
 
 ```bash
-# 启用SIMD优化进行构建
+# Enable SIMD optimizations for building
 cargo build --features simd
 
-# 运行测试（包括SIMD优化测试）
+# Run tests (including tests with SIMD optimizations)
 cargo test --features simd
 ```
 
