@@ -4,203 +4,147 @@ pub mod basic; // Keep basic.rs for now, will modify its content later
 pub mod basic_types; // Introduce the new basic_types module
 pub mod complex; // complex module will be refactored or removed later
 pub mod complex_types; // Declare the new complex_types module
+pub mod htlv; // Export the htlv module
+// pub mod context; // Import the context module - This has been moved
+pub mod batch; // Declare the new batch module
+pub mod decoder_state_machine; // Import the new state machine module
+
+// Publicly re-export modules used by the state machine
+pub mod basic_value_decoder;
+pub mod batch_value_decoder;
+pub mod complex_value_handler;
+pub mod large_field_handler;
+
 
 use crate::internal::error::{Error, Result};
 use crate::codec::varint;
 use crate::codec::types::{HtlvItem, HtlvValueType, HtlvValue};
-// Removed unused import: use bytes::Bytes;
+use bytes::BytesMut; // Use BytesMut for efficient buffer appending
+use bytes::Bytes; // Import Bytes for test data
+use decoder_state_machine::{DecodeContext, DecodeState, ComplexDecodeContext, MAX_NESTING_DEPTH}; // Import from the new state machine module
+use batch::BatchDecoder; // Import BatchDecoder trait
+use std::mem; // Import std::mem
 
-/// Represents the state of the decoding pipeline.
-#[derive(Debug, PartialEq)]
-enum DecodeState {
-    Scan,
-    DecodeHeader,
-    // Removed DecodeValue state as it's no longer used in the iterative approach
-    ProcessComplex,
-    Done,
-}
 
-/// Represents a complex item being decoded on the stack.
-#[derive(Debug)]
-struct ComplexDecodeContext {
-    tag: u64,
-    value_type: HtlvValueType,
-    end_offset: usize, // The offset in the original data where this complex value ends
-    items: Vec<HtlvItem>,
-}
+// Fixed length for the total length encoded in the large field header item value (size of u64)
+const TOTAL_LENGTH_HEADER_LEN: u64 = 8;
 
-/// Decodes bytes into an HTLV item (Tag + Type + Length + Value) using an iterative approach
-/// with a state machine to simulate a multi-stage pipeline and handle nested structures.
-/// Returns the decoded HtlvItem and the number of bytes read.
+
+/// Decodes bytes into a single logical HTLV item (Tag + Type + Value) using an iterative approach
+/// with a state machine to simulate a multi-stage pipeline and handle nested structures and large fields.
+/// Returns the decoded HtlvItem and the number of bytes read for this logical item.
+/// Note: For large fields, this function will consume multiple underlying HTLV items (header + shards).
 pub fn decode_item(data: &[u8]) -> Result<(HtlvItem, usize)> {
-    let mut current_offset = 0;
-    let mut state = DecodeState::Scan;
-    let mut complex_stack: Vec<ComplexDecodeContext> = Vec::new();
-    let mut root_item: Option<HtlvItem> = None;
+    let mut ctx = DecodeContext::new(data);
 
-    while state != DecodeState::Done {
-        println!("decode_item loop: current_offset = {}, state = {:?}", current_offset, state);
-        match state {
-            DecodeState::Scan => {
-                // Check if we have processed all data for the current complex item on top of the stack.
-                if let Some(parent_context) = complex_stack.last() {
-                    if current_offset >= parent_context.end_offset {
-                        // Current complex item is fully processed, move to ProcessComplex state
-                        state = DecodeState::ProcessComplex;
-                        println!("decode_item state transition: Scan -> ProcessComplex");
-                        continue; // Skip the rest of the Scan logic for this iteration
-                    }
-                }
-
-                // If stack is empty or current complex item is not done, scan for the next item header.
-                if current_offset < data.len() {
-                    state = DecodeState::DecodeHeader;
-                    println!("decode_item state transition: Scan -> DecodeHeader");
-                } else {
-                    // If we are at the end of the data and the stack is empty, we are done.
-                    if complex_stack.is_empty() {
-                         state = DecodeState::Done;
-                         println!("decode_item state transition: Scan -> Done (stack empty)");
-                    } else {
-                        // If we are at the end of the data but the stack is not empty, it means
-                        // a complex item was not fully decoded.
-                         return Err(Error::CodecError("Incomplete data: Complex item not fully decoded".to_string()));
-                    }
-                }
-            }
-            DecodeState::DecodeHeader => {
-                // Decode Tag
-                let (tag, tag_bytes) = varint::decode_varint(&data[current_offset..])
-                    .map_err(|e| Error::CodecError(format!("Failed to decode item Tag varint: {}", e)))?;
-                current_offset += tag_bytes;
-
-                // Ensure there's enough data for the Type byte
-                if data.len() < current_offset + 1 {
-                     return Err(Error::CodecError("Incomplete data for Type byte".to_string()));
-                }
-
-                // Decode Type
-                let value_type_byte = data[current_offset];
-                current_offset += 1;
-
-                let value_type = HtlvValueType::from_byte(value_type_byte)
-                    .ok_or_else(|| Error::CodecError(format!("Unknown value type tag: {}", value_type_byte)))?;
-
-                // Decode Length
-                let remaining_data_after_type = &data[current_offset..];
-                let (length, length_bytes) = varint::decode_varint(remaining_data_after_type)
-                    .map_err(|e| Error::CodecError(format!("Failed to decode Length varint: {}", e)))?;
-                current_offset += length_bytes;
-
-                // Ensure there's enough data for the Value
-                if data.len() < current_offset + length as usize {
-                    return Err(Error::CodecError(format!("Incomplete data for Value (expected {} bytes)", length)));
-                }
-
-                // Get the Value slice (zero-copy)
-                let value_start = current_offset;
-                let value_end = current_offset + length as usize;
-                // Note: current_offset is NOT advanced past the value bytes here for complex types.
-                // It stays at value_start so the next Scan can process the nested items.
-
-                // Based on the type, decide the next state and how to handle the value
-                match value_type {
-                    HtlvValueType::Array | HtlvValueType::Object => {
-                        // It's a complex type, push a new context onto the stack
-                        complex_stack.push(ComplexDecodeContext {
-                            tag,
-                            value_type,
-                            end_offset: value_end, // End of the complex value in the original data
-                            items: Vec::new(),
-                        });
-                        // current_offset remains at value_start to process nested items
-                        state = DecodeState::Scan; // Start scanning for items within this complex type
-                        println!("decode_item state transition: DecodeHeader -> Scan (Complex)");
-                    }
-                    _ => {
-                        // It's a basic type, decode the value immediately
-                        let raw_value_slice = &data[value_start..value_end];
-                        // Call the appropriate decoding function from basic_types module
-                        let decoded_value = match value_type {
-                            HtlvValueType::Null => basic_types::null::decode_null(length)?,
-                            HtlvValueType::Bool => basic_types::boolean::decode_bool(length, raw_value_slice)?,
-                            HtlvValueType::U8 => basic_types::u8::decode_u8(length, raw_value_slice)?,
-                            HtlvValueType::U16 => basic_types::u16::decode_u16(length, raw_value_slice)?,
-                            HtlvValueType::U32 => basic_types::u32::decode_u32(length, raw_value_slice)?,
-                            HtlvValueType::U64 => basic_types::u64::decode_u64(length, raw_value_slice)?,
-                            HtlvValueType::I8 => basic_types::i8::decode_i8(length, raw_value_slice)?,
-                            HtlvValueType::I16 => basic_types::i16::decode_i16(length, raw_value_slice)?,
-                            HtlvValueType::I32 => basic_types::i32::decode_i32(length, raw_value_slice)?,
-                            HtlvValueType::I64 => basic_types::i64::decode_i64(length, raw_value_slice)?,
-                            HtlvValueType::F32 => basic_types::floats::decode_f32(length, raw_value_slice)?,
-                            HtlvValueType::F64 => basic_types::floats::decode_f64(length, raw_value_slice)?,
-                            HtlvValueType::Bytes => basic_types::bytes_and_string::decode_bytes(raw_value_slice)?,
-                            HtlvValueType::String => basic_types::bytes_and_string::decode_string(raw_value_slice)?,
-                            _ => unreachable!("Complex types should be handled in the complex branch"),
-                        };
-
-                        current_offset = value_end; // Advance offset past the basic value
-
-                        if complex_stack.is_empty() {
-                            // This is the root item and it's basic
-                            root_item = Some(HtlvItem::new(tag, decoded_value));
-                            state = DecodeState::Done; // Root basic item decoded
-                            println!("decode_item state transition: DecodeHeader -> Done (Root Basic)");
-                        } else {
-                            // This is a nested basic item, add it to the current complex item on the stack
-                            let parent_context = complex_stack.last_mut().unwrap();
-                            parent_context.items.push(HtlvItem::new(tag, decoded_value));
-                            state = DecodeState::Scan; // Continue scanning for the next item at the current level
-                            println!("decode_item state transition: DecodeHeader -> Scan (Nested Basic)");
-                        }
-                    }
-                }
-            }
-            DecodeState::ProcessComplex => {
-                // A complex item on top of the stack is finished processing its children.
-                let decoded_complex_context = complex_stack.pop().unwrap();
-                let complex_value = match decoded_complex_context.value_type {
-                    HtlvValueType::Array => HtlvValue::Array(decoded_complex_context.items),
-                    HtlvValueType::Object => HtlvValue::Object(decoded_complex_context.items),
-                    _ => unreachable!(),
-                };
-
-                // Update current_offset to the end of the processed complex value
-                current_offset = decoded_complex_context.end_offset;
-                println!("decode_item: Updated current_offset to end_offset = {}", current_offset);
-
-
-                if let Some(grandparent_context) = complex_stack.last_mut() {
-                    // Add the fully decoded complex item to its parent
-                    grandparent_context.items.push(HtlvItem::new(decoded_complex_context.tag, complex_value));
-                    state = DecodeState::Scan; // Continue scanning for the next item at the grandparent level
-                    println!("decode_item state transition: ProcessComplex -> Scan (Nested Complex)");
-                } else {
-                    // The root complex item is fully decoded
-                    root_item = Some(HtlvItem::new(decoded_complex_context.tag, complex_value));
-                    state = DecodeState::Done;
-                    println!("decode_item state transition: ProcessComplex -> Done (Root Complex)");
-                }
-            } // Added closing brace for ProcessComplex arm
-            DecodeState::Done => {
-                // Should exit the loop here
-            }
+    while ctx.state != DecodeState::Done {
+        // println!("decode_item loop: current_offset = {}, state = {:?}", ctx.current_offset, ctx.state); // Debug print
+        match ctx.state {
+            DecodeState::Scan => ctx.handle_scan_state()?,
+            DecodeState::PrepareValue => ctx.handle_prepare_value_state()?,
+            DecodeState::DecodeValue => ctx.handle_decode_value_state()?,
+            DecodeState::DecodeBatchValue => ctx.handle_decode_batch_value_state()?,
+            DecodeState::ProcessComplex => ctx.handle_process_complex_state()?,
+            DecodeState::Done => break, // Should exit the loop here
         }
     }
 
-    // Ensure all data was consumed for the root item
-    if current_offset != data.len() {
-         return Err(Error::CodecError(format!("Extra data remaining after decoding: {} bytes", data.len() - current_offset)));
+    // If we exit the loop while still decoding a large field, it's an error
+    if ctx.decoding_large_field {
+         return Err(Error::CodecError(format!("Incomplete large field data at end of stream. Expected total length {}, got {}", ctx.large_field_total_length, ctx.large_field_buffer.len())));
     }
 
 
-    root_item.ok_or_else(|| Error::CodecError("Decoding failed: No root item decoded".to_string()))
-        .map(|item| (item, current_offset))
+    ctx.root_item.ok_or_else(|| Error::CodecError("Decoding failed: No root item decoded".to_string()))
+        .map(|item| (item, ctx.bytes_read_for_root_item)) // Return bytes read for the root item
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bytes::Bytes;
+    use crate::codec::varint; // Import varint for tests
+    use crate::codec::encode::encode_item; // Import encode_item for tests
+    use decoder_state_machine::MAX_NESTING_DEPTH; // Import MAX_NESTING_DEPTH for tests
 
-// TODO: Implement full HTLV decoding for various data types and structures
-// TODO: Implement zero-copy parsing for complex structures
-// TODO: Implement SIMD optimization for decoding (placeholders added in basic.rs)
-// TODO: Design and implement a multi-stage pipeline for decoding, especially for Array/Object
-// TODO: Add more decoding related functions and structures
+    #[test]
+    fn test_decode_nested_depth_limit() {
+        // Construct a deeply nested structure exceeding the limit (32 levels)
+        let mut raw_data = BytesMut::new();
+        let tag = 1;
+        let value_type = HtlvValueType::Array; // Or HtlvValueType::Object
+
+        // Create a structure with MAX_NESTING_DEPTH + 1 levels
+        for _ in 0..MAX_NESTING_DEPTH + 1 {
+            // Encode Tag (1), Type (Array/Object), and a placeholder Length (will be updated)
+            let tag_bytes = varint::encode_varint(tag);
+            raw_data.extend_from_slice(&tag_bytes);
+            raw_data.extend_from_slice(&[value_type as u8]);
+            // Placeholder for Length (1 byte for now, will be updated later)
+            raw_data.extend_from_slice(&[0x00]);
+        }
+
+        // The total length of the data is the sum of the sizes of each nested item header.
+        // Each header is Tag (varint, min 1 byte) + Type (1 byte) + Length (varint, min 1 byte).
+        // For this test, we use tag 1 (1 byte) and a placeholder length 0 (1 byte).
+        // So each header is 1 + 1 + 1 = 3 bytes.
+        let item_header_size = varint::encode_varint(tag).len() + 1 + varint::encode_varint(0).len();
+
+        // Now, go back and update the Length fields.
+        let mut current_offset = 0;
+        for _ in 0..MAX_NESTING_DEPTH + 1 {
+            // Skip Tag and Type
+            let (_, tag_bytes_len) = varint::decode_varint(&raw_data[current_offset..]).unwrap();
+            current_offset += tag_bytes_len + 1; // Skip Tag and Type byte
+
+            // Calculate the remaining length
+            let remaining_length = raw_data.len() - current_offset - varint::encode_varint(0).len();
+
+            // Encode the actual length
+            let length_bytes = varint::encode_varint(remaining_length as u64);
+
+            // Replace the placeholder length bytes with the actual length bytes
+            let mut new_raw_data = BytesMut::new();
+            new_raw_data.extend_from_slice(&raw_data[..current_offset]);
+            new_raw_data.extend_from_slice(&length_bytes);
+            new_raw_data.extend_from_slice(&raw_data[current_offset + varint::encode_varint(0).len()..]);
+
+            raw_data = new_raw_data;
+            current_offset += length_bytes.len();
+        }
+
+
+        // Now decode and expect a depth limit error
+        let result = decode_item(&raw_data);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            format!("Codec Error: Maximum nesting depth ({}) exceeded", MAX_NESTING_DEPTH)
+        );
+    }
+
+    #[test]
+    fn test_decode_array_batch_u8() {
+        // Test decoding an Array containing a batch of U8 values
+        // Correctly encode the Array with nested U8 items
+        let items_to_encode = vec![
+            HtlvItem::new(0, HtlvValue::U8(1)),
+            HtlvItem::new(0, HtlvValue::U8(2)),
+            HtlvItem::new(0, HtlvValue::U8(3)),
+            HtlvItem::new(0, HtlvValue::U8(4)),
+            HtlvItem::new(0, HtlvValue::U8(5)),
+        ];
+        let array_value = HtlvValue::Array(items_to_encode.clone());
+        let raw_data = encode_item(&HtlvItem::new(10, array_value)).unwrap();
+
+
+        let expected_item = HtlvItem::new(
+            10,
+            HtlvValue::Array(items_to_encode),
+        );
+
+        let (decoded_item, bytes_read) = decode_item(&raw_data).unwrap();
+        assert_eq!(bytes_read, raw_data.len());
+        assert_eq!(decoded_item, expected_item);
+    }
+}

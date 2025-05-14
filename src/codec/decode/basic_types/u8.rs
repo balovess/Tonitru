@@ -1,6 +1,7 @@
 use crate::codec::types::HtlvValue;
 use crate::internal::error::{Error, Result};
 use std::mem;
+use crate::codec::decode::batch::BatchDecoder; // Import BatchDecoder trait
 
 /// Decodes a U8 HtlvValue from bytes.
 pub fn decode_u8(length: u64, raw_value_slice: &[u8]) -> Result<HtlvValue> {
@@ -10,24 +11,27 @@ pub fn decode_u8(length: u64, raw_value_slice: &[u8]) -> Result<HtlvValue> {
             length
         )));
     }
+    if raw_value_slice.is_empty() {
+         return Err(Error::CodecError("Incomplete data for U8 value".to_string()));
+    }
     Ok(HtlvValue::U8(raw_value_slice[0]))
 }
 
-/// Decodes a batch of U8 values from bytes.
-pub fn decode_u8_batch(raw_value_slice: &[u8], count: usize) -> Result<Vec<u8>> {
-    let required_len = count * mem::size_of::<u8>();
-    if raw_value_slice.len() < required_len {
-        return Err(Error::CodecError(format!(
-            "Incomplete data for U8 batch decoding. Expected at least {} bytes, got {}",
-            required_len,
-            raw_value_slice.len()
-        )));
-    }
+// Note: The previous `decode_u8_batch` function is now replaced by the `BatchDecoder` implementation below.
 
-    // U8 batch decoding is straightforward byte copying
-    let result = raw_value_slice[..required_len].to_vec();
-    Ok(result)
+impl BatchDecoder for u8 {
+    type DecodedType = u8;
+
+    /// Decodes a batch of U8 values from bytes.
+    /// Returns a slice of the decoded elements and the number of bytes read.
+    fn decode_batch(data: &[u8]) -> Result<(&[Self::DecodedType], usize)> {
+        // For u8, batch decoding is a zero-copy operation.
+        // The number of bytes read is equal to the number of elements.
+        let bytes_consumed = data.len();
+        Ok((data, bytes_consumed))
+    }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -38,15 +42,26 @@ mod tests {
     #[test]
     fn test_decode_u8() {
         let encoded_u8 = encode_item(&HtlvItem::new(0, HtlvValue::U8(255))).unwrap();
-        let raw_value_slice_u8 = &encoded_u8[encoded_u8.len().checked_sub(1).unwrap()..]; // Length 1
+        // Assuming encode_item for U8 results in [Tag(varint), Type(u8), Length(varint), Value(u8)]
+        // We need to find the start of the Value slice.
+        // For tag 0 (1 byte), type U8 (1 byte), length 1 (1 byte), the header is 3 bytes.
+        let raw_value_slice_u8 = &encoded_u8[3..]; // Length 1
         let decoded_u8 = decode_u8(1, raw_value_slice_u8).unwrap();
         assert_eq!(decoded_u8, HtlvValue::U8(255));
+
+        // Test with incomplete data
+        let result = decode_u8(1, &[]);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "Codec Error: Incomplete data for U8 value"
+        );
     }
 
     #[test]
     fn test_decode_u8_errors() {
         // Invalid length for U8 (expected 1)
-        let result = decode_u8(0, &[]);
+        let result = decode_u8(0, &[10]); // Provide some data to avoid incomplete data error first
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
@@ -55,33 +70,19 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_u8_batch() {
+    fn test_decode_batch_u8() {
         // Test decoding a batch of U8 values
-        let data: Vec<u8> = vec![1, 2, 3, 4, 5];
-        let expected = vec![1, 2, 3, 4, 5];
-        let decoded = decode_u8_batch(&data, 5).unwrap();
-        assert_eq!(decoded, expected);
-
-        // Test with incomplete data
-        let incomplete_data: Vec<u8> = vec![1, 2, 3];
-        let result = decode_u8_batch(&incomplete_data, 5);
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().to_string(),
-            "Codec Error: Incomplete data for U8 batch decoding. Expected at least 5 bytes, got 3"
-        );
+        let data: &[u8] = &[1, 2, 3, 4, 5];
+        let expected_slice: &[u8] = &[1, 2, 3, 4, 5];
+        let (decoded_slice, bytes_consumed) = u8::decode_batch(data).unwrap();
+        assert_eq!(decoded_slice, expected_slice);
+        assert_eq!(bytes_consumed, 5);
 
         // Test with empty data
-        let result = decode_u8_batch(&[], 0);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), vec![] as Vec<u8>);
-
-         // Test with empty data and count > 0
-        let result = decode_u8_batch(&[], 1);
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().to_string(),
-            "Codec Error: Incomplete data for U8 batch decoding. Expected at least 1 bytes, got 0"
-        );
+        let data: &[u8] = &[];
+        let expected_slice: &[u8] = &[];
+        let (decoded_slice, bytes_consumed) = u8::decode_batch(data).unwrap();
+        assert_eq!(decoded_slice, expected_slice);
+        assert_eq!(bytes_consumed, 0);
     }
 }

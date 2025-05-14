@@ -1,2 +1,3 @@
 # 忽略 docs 文件夹
 /docs/
+/target/

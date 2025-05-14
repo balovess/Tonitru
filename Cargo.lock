@@ -1670,6 +1670,7 @@ name = "tonitru"
 version = "0.1.0"
 dependencies = [
  "aes-gcm",
+ "bitflags 2.9.0",
  "blake3",
  "bloomfilter",
  "brotli",

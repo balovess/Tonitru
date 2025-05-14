@@ -34,5 +34,6 @@ libloading = "0.8" # Or the latest compatible version
 thiserror = "1.0" # Add thiserror crate
 bytes = "1.0" # Add bytes crate for zero-copy
 byteorder = "1.4" # Add byteorder crate
+bitflags = "2.0" # Add bitflags crate
 
 # Other potential dependencies will be added as needed

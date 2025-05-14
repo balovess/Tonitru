@@ -1,4 +1,5 @@
 use thiserror::Error;
+use std::io; // Import std::io
 
 /// Unified error type for the Tonitru library.
 #[derive(Error, Debug)]
@@ -48,6 +49,13 @@ pub enum Error {
 
 /// A specialized `Result` type for Tonitru operations.
 pub type Result<T> = std::result::Result<T, Error>;
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Self {
+        // Convert std::io::Error to a CodecError, as byteorder errors are codec-related
+        Error::CodecError(format!("IO Error during codec operation: {}", err))
+    }
+}
 
 /*
 异常 (Panic) 处理策略:

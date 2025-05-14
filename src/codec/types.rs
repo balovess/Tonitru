@@ -1,31 +1,35 @@
-use bytes::Bytes; // Import Bytes
+use bytes::Bytes;
+use bitflags::bitflags;
 
 /// Represents a single HTLV (HyperNova) data item.
-#[derive(Debug, PartialEq, Clone)] // Added Clone derive
+/// This struct is used internally for representing parsed HTLV values,
+/// especially within complex types like Arrays and Objects.
+#[derive(Debug, PartialEq, Clone)]
 pub struct HtlvItem {
     pub tag: u64,
     pub value: HtlvValue,
 }
 
 /// Represents the value part of an HTLV data item.
-#[derive(Debug, PartialEq, Clone)] // Added Clone derive
+/// This enum covers various basic and complex data types supported by HTLV.
+#[derive(Debug, PartialEq, Clone)]
 pub enum HtlvValue {
     Null,
     Bool(bool),
-    U8(u8),   // Add U8 type
-    U16(u16), // Add U16 type
-    U32(u32), // Add U32 type
+    U8(u8),
+    U16(u16),
+    U32(u32),
     U64(u64),
-    I8(i8),   // Add I8 type
-    I16(i16), // Add I16 type
-    I32(i32), // Add I32 type
+    I8(i8),
+    I16(i16),
+    I32(i32),
     I64(i64),
-    F32(f32), // Add F32 type
+    F32(f32),
     F64(f64),
-    Bytes(Bytes), // Use Bytes for zero-copy
-    String(Bytes), // Use Bytes for zero-copy string data
-    Array(Vec<HtlvItem>), // Add Array type
-    Object(Vec<HtlvItem>), // Add Object type (representing fields)
+    Bytes(Bytes),
+    String(Bytes),
+    Array(Vec<HtlvItem>),
+    Object(Vec<HtlvItem>),
     // TODO: Add support for other complex types like maps
 }
 
@@ -59,20 +63,20 @@ impl HtlvValue {
 pub enum HtlvValueType {
     Null = 0,
     Bool = 1,
-    U8 = 2,   // Assign byte for U8
-    U16 = 3,  // Assign byte for U16
-    U32 = 4,  // Assign byte for U32
+    U8 = 2,
+    U16 = 3,
+    U32 = 4,
     U64 = 5,
-    I8 = 6,   // Assign byte for I8
-    I16 = 7,  // Assign byte for I16
-    I32 = 8,  // Assign byte for I32
+    I8 = 6,
+    I16 = 7,
+    I32 = 8,
     I64 = 9,
-    F32 = 10, // Assign byte for F32
+    F32 = 10,
     F64 = 11,
-    Bytes = 12, // Update byte for Bytes
-    String = 13, // Update byte for String
-    Array = 14, // Update byte for Array
-    Object = 15, // Update byte for Object
+    Bytes = 12,
+    String = 13,
+    Array = 14,
+    Object = 15,
     // TODO: Assign type bytes for other complex types if needed
 }
 
@@ -101,7 +105,6 @@ impl HtlvValueType {
     }
 }
 
-
 impl HtlvItem {
     /// Creates a new HTLV item.
     pub fn new(tag: u64, value: HtlvValue) -> Self {
@@ -109,4 +112,57 @@ impl HtlvItem {
     }
 }
 
-// Note: Encoding and decoding logic for HtlvItem will be implemented in encode.rs and decode.rs
+bitflags! {
+    /// Flags for HTLV data blocks.
+    ///
+    /// These flags indicate properties of the Value field, such as whether it is
+    /// a nested structure, compressed, or encrypted.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct HTLVFlag: u8 {
+        /// Indicates that the Value is a nested HTLV structure.
+        const NESTED    = 0b00000001;
+        /// Indicates that the Value has been compressed.
+        const COMPRESSED = 0b00000010;
+        /// Indicates that the Value has been encrypted.
+        const ENCRYPTED = 0b00000100;
+        // Bits 3-7 are reserved for future use.
+    }
+}
+
+/// Represents a complete HTLV data block.
+///
+/// An HTLV block consists of a Tag, Flags, Length, and Value. The Value
+/// can either be raw bytes or a sequence of nested HTLV blocks if the
+/// `NESTED` flag is set.
+#[derive(Debug, PartialEq, Clone)]
+pub struct HTLVBlock {
+    /// The tag identifying the field.
+    pub tag: u16,
+    /// Flags indicating properties of the Value (e.g., nested, compressed, encrypted).
+    pub flags: HTLVFlag,
+    /// The length of the raw Value bytes. This is encoded using Variable Length Integer (VLQ).
+    pub length: u64,
+    /// The raw byte sequence of the Value. If the `NESTED` flag is set, this
+    /// contains the encoded bytes of the nested HTLV blocks.
+    pub value: Vec<u8>,
+    /// A vector of nested HTLV blocks, present only if the `NESTED` flag is set
+    /// and the Value bytes have been successfully decoded into blocks.
+    pub nested: Vec<HTLVBlock>,
+}
+
+impl HTLVBlock {
+    /// Creates a new HTLV block.
+    ///
+    /// The `length` field is automatically calculated based on the length of the
+    /// provided `value` byte vector.
+    pub fn new(tag: u16, flags: HTLVFlag, value: Vec<u8>, nested: Vec<HTLVBlock>) -> Self {
+        let length = value.len() as u64;
+        HTLVBlock {
+            tag,
+            flags,
+            length,
+            value,
+            nested,
+        }
+    }
+}
