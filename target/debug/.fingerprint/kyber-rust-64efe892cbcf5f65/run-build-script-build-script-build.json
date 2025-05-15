@@ -1,1 +1,0 @@
-{"rustc":10895048813736897673,"features":"","declared_features":"","target":0,"profile":0,"path":0,"deps":[[4913457829253184238,"build_script_build",false,3253843759596664836]],"local":[{"RerunIfChanged":{"output":"debug\\build\\kyber-rust-64efe892cbcf5f65\\output","paths":["build.rs","kyber.dll"]}}],"rustflags":[],"config":0,"compile_kind":0}
