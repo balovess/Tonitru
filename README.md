@@ -66,4 +66,8 @@ Comprehensive guides, design documents, and development plans are available in t
 - [Schema Module](docs/schema_module.md)
 
 ## License
-Tonitru is licensed under the Apache License 2.0. This means you are free to use, modify, and distribute the project, provided that you retain proper attribution and keep the project open source. For full details, see the LICENSE file in this repository.
+
+This project is dual-licensed:
+
+- **Personal/Non-commercial use**: Free under the MIT License (see [LICENSE-MIT](LICENSE-MIT)).  
+- **Commercial use**: Requires a separate license. Contact [] for pricing and terms.
